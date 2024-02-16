@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ddce96770d50dc2429f3eb30e4b35e54, type: 3}
+  m_Name: MyFont
+  m_EditorClassIdentifier: 
+  _numberSprites:
+  - {fileID: 21300000, guid: ebd553978cbb348469c172c2b6ce7af2, type: 3}
+  - {fileID: 21300000, guid: efdc3bfcc70b2e14286188808a85ab7c, type: 3}
+  - {fileID: 21300000, guid: d878d46fc45a5f0438e9dac54af67674, type: 3}
+  - {fileID: 21300000, guid: 952402048488d1540a6d4a67e85654d0, type: 3}
+  - {fileID: 21300000, guid: c4b46b5ed6d0e4549872b2f01e04094a, type: 3}
+  - {fileID: 21300000, guid: 1ec70ba49aa3a094e8c5ff076021bf5e, type: 3}
+  - {fileID: 21300000, guid: 0a9c3ce873a695142b36e5d9331f470e, type: 3}
+  - {fileID: 21300000, guid: c33ae23df19fcd94183a3307b99d1b7b, type: 3}
+  - {fileID: 21300000, guid: 36fef7a520ac3204982d42bb26d13476, type: 3}
+  - {fileID: 21300000, guid: 06aebf0d66225cd499c11aa3a610fb9b, type: 3}
