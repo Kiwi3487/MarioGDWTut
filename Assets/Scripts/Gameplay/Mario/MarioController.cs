@@ -2,106 +2,157 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class MarioController : MonoBehaviour
 {
     [SerializeField] private float runForce;
     [SerializeField] private float jumpForce;
     [SerializeField] private float maxSpeed;
+    
 
-    private Transform trans;
-    private Rigidbody2D body;
+    [SerializeField] private GameObject bigMarioPrefab;
+    [SerializeField] private GameObject smallMarioPrefab;
+    [SerializeField] private GameObject fireballPrefab;
 
-    private float runInput;
-    private bool jumpInput;
+    private Transform _trans;
+    private Rigidbody2D _rb;
 
-    private bool isGrounded;
-    // Start is called before the first frame update
-    void Start()
+    private float _runInput;
+    private bool _jumpInput;
+
+    private bool _isGrounded;
+    private bool _isBig;
+    private bool _isDead;
+
+    private bool _deathStarted;
+    
+    private void Start()
     {
-        trans = GetComponent<Transform>();
-        body = GetComponent<Rigidbody2D>();
+        _trans = GetComponent<Transform>();
+        _rb = GetComponent<Rigidbody2D>();
     }
-
-    // Update is called once per frame
-    void Update()
+    
+    private void Update()
     {
-        runInput = Input.GetAxis("Horizontal");
-
+        _runInput = Input.GetAxis("Horizontal");
 
         if (Input.GetKey(KeyCode.W))
         {
-            jumpInput = true;
+            _jumpInput = true;
         }
         else
         {
-            jumpInput = false;
+            _jumpInput = false;
         }
 
-        if (runInput == 0 && body.velocity.y == 0)
+        if (_runInput == 0 && _rb.velocity.y == 0)
         {
-            body.drag = 3;
+            _rb.drag = 3;
         }
         else
         {
-            body.drag = 1;
+            _rb.drag = 1;
+        }
+
+        if (_trans.position.y <= -5 && !_deathStarted)
+        {
+            StartDeath();
+        }
+
+        if (_trans.position.y <= -7)
+        {
+            Die();
+        }
+        
+        if (Input.GetKeyDown(KeyCode.Space) && _isBig)
+        {
+            ShootFireball();
         }
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
-        if (runInput != 0)
+        if (_runInput != 0)
         {
             Run();
         }
 
-        if (jumpInput && isGrounded)
+        if (_jumpInput && _isGrounded)
         {
             Jump();
         }
     }
 
-    void Run()
+    private void Run()
     {
-        if (Mathf.Abs(body.velocity.x) >= maxSpeed)
+        if (Mathf.Abs(_rb.velocity.x) >= maxSpeed)
         {
             return;
         }
 
-        if (runInput > 0)
+        if (_runInput > 0)
         {
-            body.AddForce(Vector2.right * runForce, ForceMode2D.Force);
-            trans.rotation = Quaternion.Euler(0, 180, 0);
+            _rb.AddForce(Vector2.right * runForce, ForceMode2D.Force);
+            _trans.rotation = Quaternion.Euler(0, 180, 0);
         }
-        if (runInput < 0)
+        if (_runInput < 0)
         {
-            body.AddForce(Vector2.left * runForce, ForceMode2D.Force);
-            trans.rotation = Quaternion.Euler(0, 0, 0);
+            _rb.AddForce(Vector2.left * runForce, ForceMode2D.Force);
+            _trans.rotation = Quaternion.Euler(0, 0, 0);
         }
     }
 
-    void Jump()
+    private void Jump()
     {
-        body.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
-        isGrounded = false;
+        _rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+        _isGrounded = false;
     }
 
     void EnemyBounce()
     {
-        body.AddForce(Vector2.up * jumpForce / 1.5f, ForceMode2D.Impulse);
-        isGrounded = false;
+        _rb.AddForce(Vector2.up * jumpForce / 1.5f, ForceMode2D.Impulse);
+        _isGrounded = false;
     }
 
+    void StartDeath()
+    {
+        _isDead = true;
+
+        _rb.velocity = Vector2.zero;
+
+        _rb.gravityScale = 3;
+
+        _rb.AddForce(Vector3.up * jumpForce / 2, ForceMode2D.Impulse);
+
+        GetComponent<Collider2D>().enabled = false;
+
+        _deathStarted = true;
+    }
+
+    void Die()
+    {
+        SceneManager.LoadScene("World1-1");
+    }
+    
+    private void ShootFireball()
+    {
+        // Instantiate fireball in front of Mario
+        Vector2 fireballPosition = _trans.position + Vector3.right * (_trans.localScale.x > 0 ? 1 : -1);
+        Instantiate(fireballPrefab, fireballPosition, Quaternion.identity);
+    }
+
+    
     private void OnCollisionEnter2D(Collision2D collision)
     {
         for (int i = 0; i < collision.contacts.Length; i++)
         {
             if (collision.contacts[i].normal.y > 0.5)
             {
-                isGrounded = true;
+                _isGrounded = true;
             }
         }
-
+        
         if (collision.gameObject.tag == "Goomba")
         {
             if (collision.contacts[0].normal.y > 0.5)
@@ -113,11 +164,19 @@ public class MarioController : MonoBehaviour
             {
                 if (!collision.gameObject.GetComponent<Goomba>().GetIsSquashed())
                 {
-                    Debug.Log("Died");
+                    if (_isBig)
+                    {
+                        GetComponent<BoxCollider2D>().size = smallMarioPrefab.GetComponent<BoxCollider2D>().size;
+                        _isBig = false;
+                    }
+                    else
+                    {
+                        StartDeath();
+                    }
                 }
             }
         }
-        
+
         if (collision.gameObject.tag == "FlyingGoomba")
         {
             if (collision.contacts[0].normal.y > 0.5)
@@ -129,11 +188,19 @@ public class MarioController : MonoBehaviour
             {
                 if (!collision.gameObject.GetComponent<FlyingGoomba>().GetIsSquashed())
                 {
-                    Debug.Log("Died");
+                    if (_isBig)
+                    {
+                        GetComponent<BoxCollider2D>().size = smallMarioPrefab.GetComponent<BoxCollider2D>().size;
+                        _isBig = false;
+                    }
+                    else
+                    {
+                        StartDeath();
+                    }
                 }
             }
         }
-
+        
         if (collision.gameObject.tag == "Koopa")
         {
             if (collision.contacts[0].normal.y > 0.5 && !collision.gameObject.GetComponent<Koopa>().GetIsKicked())
@@ -148,11 +215,11 @@ public class MarioController : MonoBehaviour
             else if (collision.gameObject.GetComponent<Koopa>().GetIsSquashed() &&
                      !collision.gameObject.GetComponent<Koopa>().GetIsKicked())
             {
-                if (collision.gameObject.transform.position.x > trans.position.x)
+                if (collision.gameObject.transform.position.x > _trans.position.x)
                 {
                     collision.gameObject.GetComponent<Koopa>().ApplyKickForce(new Vector2(1, 0));
                 }
-                if (collision.gameObject.transform.position.x < trans.position.x)
+                if (collision.gameObject.transform.position.x < _trans.position.x)
                 {
                     collision.gameObject.GetComponent<Koopa>().ApplyKickForce(new Vector2(1, 0));
                 }
@@ -163,15 +230,55 @@ public class MarioController : MonoBehaviour
                 collision.gameObject.GetComponent<Koopa>().SetIsKicked(false);
                 collision.gameObject.GetComponent<Koopa>().SetIsMoving(false);
 
-                collision.gameObject.GetComponent<Rigidbody2D>().velocity = new Vector2(0,
+                collision.gameObject.GetComponent<Rigidbody2D>().velocity = new Vector2(0, 
                     collision.gameObject.GetComponent<Rigidbody2D>().velocity.y);
             }
             else
             {
                 if (collision.gameObject.GetComponent<Koopa>().GetIsMoving())
                 {
-                    Debug.Log("Koopa kills mes");
+                    if (_isBig)
+                    {
+                        GetComponent<BoxCollider2D>().size = smallMarioPrefab.GetComponent<BoxCollider2D>().size;
+                        _isBig = false;
+                    }
+                    else
+                    {
+                        Debug.Log("I Died");
+                    }
                 }
+            }
+        }
+
+        if (collision.gameObject.name.Contains("Mushroom"))
+        {
+            if (!_isBig)
+            {
+                Destroy(collision.gameObject);
+
+                _isBig = true;
+
+                GetComponent<BoxCollider2D>().size = bigMarioPrefab.GetComponent<BoxCollider2D>().size;
+            }
+            else
+            {
+                Destroy(collision.gameObject);
+            }
+        }
+        
+        if (collision.gameObject.name.Contains("FireFlower"))
+        {
+            if (!_isBig)
+            {
+                Destroy(collision.gameObject);
+
+                _isBig = true;
+
+                GetComponent<BoxCollider2D>().size = bigMarioPrefab.GetComponent<BoxCollider2D>().size;
+            }
+            else
+            {
+                Destroy(collision.gameObject);
             }
         }
     }
