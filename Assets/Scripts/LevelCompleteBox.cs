@@ -2,49 +2,77 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Random = UnityEngine.Random;
 using UnityEngine.SceneManagement;
+using Random = UnityEngine.Random;
 
-public class LevelCompleteBox : MonoBehaviour
+public class LevelCompleteSquare : MonoBehaviour
 {
     [SerializeField] private List<Sprite> powerupList;
 
-    private float changeTimer = 0;
-    private int previousChoice = 5;
+    private float _changeTimer = 0;
+    private int _previousChoice = 5;
+    private int timeScore;
+    private TimeCounter _timeCounter;
 
-    private bool itemCollected;
+    private bool _itemCollected;
+    
+    void Start()
+    {
+        _timeCounter = FindObjectOfType<TimeCounter>(); // Find the TimeCounter script in the scene
+    }
 
-    // Update is called once per frame
     void Update()
     {
-        if (!itemCollected)
+        if (!_itemCollected)
         {
             ChangeImage();
         }
     }
 
-    void ChangeImage()
+    private void ChangeImage()
     {
-        if (changeTimer < Time.realtimeSinceStartup)
+        if (_changeTimer < Time.realtimeSinceStartup)
         {
             int choice = (int)Random.Range(0, powerupList.Count - 1);
 
-            if (choice == previousChoice)
+            if (choice == _previousChoice)
             {
                 ChangeImage();
                 return;
             }
 
             GetComponent<SpriteRenderer>().sprite = powerupList[choice];
-            changeTimer = Time.realtimeSinceStartup + 0.25f;
-            previousChoice = choice;
+            
+            _changeTimer = Time.realtimeSinceStartup + 0.25f;
+
+            _previousChoice = choice;
         }
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        itemCollected = true;
+        StartCoroutine(WaitFewSecondsBeforeClear());
+        
+        FindObjectOfType<AudioManager>().Stop("Music");
+        
+        if (_timeCounter != null)
+        {
+            timeScore = _timeCounter.timeCount * 100;
+        }
+        else
+        {
+            timeScore = 0;
+        }
+        
+        FindObjectOfType<ScoreCounter>().AddScore(timeScore);
+        FindObjectOfType<AudioManager>().Play("LevelClear");
+        
+        _itemCollected = true;
+    }
 
-        SceneManager.LoadScene("MainMenu");
+    IEnumerator WaitFewSecondsBeforeClear()
+    {
+        yield return new WaitForSeconds(5);
+        FindObjectOfType<LevelStatus>().SetLevelComplete(true);
     }
 }
